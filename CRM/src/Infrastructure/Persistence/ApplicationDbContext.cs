@@ -34,6 +34,7 @@ namespace CRM.Infrastructure.Persistence
         public DbSet<TodoItem> TodoItems { get; set; }
         public DbSet<Client> Clients { get; set; }
         public DbSet<Declarant> Declarants { get; set; }
+        
         public DbSet<Societe> Societes { get; set; }
         public DbSet<Tache> Taches { get; set; }
 
@@ -59,9 +60,6 @@ namespace CRM.Infrastructure.Persistence
             }
 
             var result = await base.SaveChangesAsync(cancellationToken);
-
-            await DispatchEvents();
-
             return result;
         }
 
@@ -71,21 +69,6 @@ namespace CRM.Infrastructure.Persistence
 
             base.OnModelCreating(builder);
         }
-
-        private async Task DispatchEvents()
-        {
-            while (true)
-            {
-                var domainEventEntity = ChangeTracker.Entries<IHasDomainEvent>()
-                    .Select(x => x.Entity.DomainEvents)
-                    .SelectMany(x => x)
-                    .Where(domainEvent => !domainEvent.IsPublished)
-                    .FirstOrDefault();
-                if (domainEventEntity == null) break;
-
-                domainEventEntity.IsPublished = true;
-                await _domainEventService.Publish(domainEventEntity);
-            }
-        }
+        
     }
 }
